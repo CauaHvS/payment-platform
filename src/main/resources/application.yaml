@@ -1,3 +1,11 @@
 spring:
   application:
     name: payment-platform
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payments
+    username: payments
+    password: payments
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
