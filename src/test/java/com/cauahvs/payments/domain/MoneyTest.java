@@ -12,7 +12,7 @@ class MoneyTest {
     @Test
     void deveCriarMoneyValido_quandoAmountECurrencySaoValidos(){
         BigDecimal amount = new BigDecimal("10.00");
-        String currency = "BRL";
+        Currency currency = Currency.BRL;
 
         Money money = new Money(amount, currency);
 
@@ -23,7 +23,7 @@ class MoneyTest {
     @Test
     void deveLancarExcecao_quandoAmountEhNull(){
         BigDecimal amount = null;
-        String currency = "BRL";
+        Currency currency = Currency.BRL;
 
         assertThatThrownBy(() -> new Money(amount, currency))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -33,37 +33,17 @@ class MoneyTest {
     @Test
     void deveLancarExcecao_quandoCurrencyEhNull(){
         BigDecimal amount = new BigDecimal("10.00");
-        String currency = null;
+        Currency currency = null;
 
         assertThatThrownBy(() -> new Money(amount, currency))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("blank");
-    }
-
-    @Test
-    void deveLancarExcecao_quandoCurrencyEhVazia(){
-        BigDecimal amount = new BigDecimal("10.00");
-        String currency = "";
-
-        assertThatThrownBy(() -> new Money(amount, currency))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("blank");
-    }
-
-    @Test
-    void deveLancarExcecao_quandoCurrencyContemApenasEspacos(){
-        BigDecimal amount = new BigDecimal("10.00");
-        String currency = "   ";
-
-        assertThatThrownBy(() -> new Money(amount, currency))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("blank");
+                .hasMessageContaining("currency must not be null");
     }
 
     @Test
     void deveLancarExcecao_quandoAmountEhNegativo(){
         BigDecimal amount = new BigDecimal("-10.00");
-        String currency = "BRL";
+        Currency currency = Currency.BRL;
 
         assertThatThrownBy(() -> new Money(amount, currency))
                 .isInstanceOf(IllegalArgumentException.class)
