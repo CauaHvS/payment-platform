@@ -16,8 +16,8 @@ class MoneyTest {
 
         Money money = new Money(amount, currency);
 
-        assertThat(money.getAmount()).isEqualTo(amount);
-        assertThat(money.getCurrency()).isEqualTo(currency);
+        assertThat(money.amount()).isEqualTo(amount);
+        assertThat(money.currency()).isEqualTo(currency);
     }
 
     @Test
