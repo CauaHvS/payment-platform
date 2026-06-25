@@ -5,6 +5,7 @@ import com.cauahvs.payments.application.port.in.CreatePaymentUseCase.CreatePayme
 import com.cauahvs.payments.application.port.out.PaymentRepository;
 import com.cauahvs.payments.domain.Payment;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -26,6 +27,7 @@ public class PaymentController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<PaymentResponse> create(@Valid @RequestBody CreatePaymentRequest request){
 
         CreatePaymentCommand command = new CreatePaymentCommand(
