@@ -12,7 +12,8 @@ public class Payment {
     private PaymentStatus status;
     private Instant updatedAt;
 
-    public Payment(UUID id, String payerId, String payeeId, Money money) {
+    private Payment(UUID id, String payerId, String payeeId, Money money,
+                    PaymentStatus status, Instant createdAt, Instant updatedAt) {
         if (id == null) {
             throw new IllegalArgumentException("id must not be null.");
         }
@@ -30,64 +31,58 @@ public class Payment {
         this.payerId = payerId;
         this.payeeId = payeeId;
         this.money = money;
-        this.status = PaymentStatus.PENDING;
-        this.createdAt = Instant.now();
-        this.updatedAt = this.createdAt;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
-    public void startProcessing(){
-        if (status != PaymentStatus.PENDING){
-            throw new IllegalStateException("Cannot start processing: payment must be PENDING but is: "+ status);
+    public static Payment create(UUID id, String payerId, String payeeId, Money money) {
+        Instant now = Instant.now();
+        return new Payment(id, payerId, payeeId, money, PaymentStatus.PENDING, now, now);
+    }
+
+    public static Payment reconstruct(UUID id, String payerId, String payeeId,
+                                      Money money, PaymentStatus status,
+                                      Instant createdAt, Instant updatedAt) {
+        return new Payment(id, payerId, payeeId, money, status, createdAt, updatedAt);
+    }
+
+    public void startProcessing() {
+        if (status != PaymentStatus.PENDING) {
+            throw new IllegalStateException("Cannot start processing: payment must be PENDING but is: " + status);
         }
         this.status = PaymentStatus.PROCESSING;
         this.updatedAt = Instant.now();
     }
 
-    public void complete(){
-        if (status != PaymentStatus.PROCESSING){
-            throw new IllegalStateException("Cannot complete: payment must be PROCESSING, but is: "+ status);
+    public void complete() {
+        if (status != PaymentStatus.PROCESSING) {
+            throw new IllegalStateException("Cannot complete: payment must be PROCESSING, but is: " + status);
         }
         this.status = PaymentStatus.COMPLETED;
         this.updatedAt = Instant.now();
     }
 
     public void fail() {
-        if (status != PaymentStatus.PROCESSING){
-            throw new IllegalStateException("Cannot fail: payment must be PROCESSING, but is: "+ status);
+        if (status != PaymentStatus.PROCESSING) {
+            throw new IllegalStateException("Cannot fail: payment must be PROCESSING, but is: " + status);
         }
         this.status = PaymentStatus.FAILED;
         this.updatedAt = Instant.now();
     }
 
-    public boolean isPending(){
-        return status == PaymentStatus.PENDING;
-    }
+    public boolean isPending()    { return status == PaymentStatus.PENDING; }
+    public boolean isProcessing() { return status == PaymentStatus.PROCESSING; }
+    public boolean isCompleted()  { return status == PaymentStatus.COMPLETED; }
+    public boolean isFailed()     { return status == PaymentStatus.FAILED; }
 
-    public boolean isProcessing(){
-        return status == PaymentStatus.PROCESSING;
-    }
-
-    public boolean isCompleted(){
-        return status == PaymentStatus.COMPLETED;
-    }
-
-    public boolean isFailed(){
-        return status == PaymentStatus.FAILED;
-    }
-
-    public UUID id(){ return id;}
-
-    public String payerId(){ return payerId;}
-
-    public String payeeId(){return payeeId;}
-
-    public Money money(){return money;}
-
-    public PaymentStatus status(){return status;}
-
-    public Instant createdAt(){return createdAt;}
-
-    public Instant updatedAt(){return updatedAt;}
+    public UUID id()               { return id; }
+    public String payerId()        { return payerId; }
+    public String payeeId()        { return payeeId; }
+    public Money money()           { return money; }
+    public PaymentStatus status()  { return status; }
+    public Instant createdAt()     { return createdAt; }
+    public Instant updatedAt()     { return updatedAt; }
 
     @Override
     public String toString() {
