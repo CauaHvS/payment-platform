@@ -1,97 +1,102 @@
-# ADR 003: Adoção do Testcontainers e tratamento de CVEs transitivas
+# ADR 002 — Adoção do Testcontainers e tratamento de vulnerabilidades transitivas
 
-## Status
-Aceito (2026-06-25). Decisão temporária; revisar conforme indicado.
+**Status:** Substituído
+**Data:** 2026-06-25
+
+> Esta decisão foi substituída pelo ADR 003, que resolveu simultaneamente a incompatibilidade com o Docker Engine 29.x e eliminou a vulnerabilidade transitiva ao adotar o Testcontainers 2.0.5.
+
+---
 
 ## Contexto
-Para implementar testes de integração da camada de persistência da
-Fase 1, foi adotado o Testcontainers — biblioteca padrão de mercado
-para subir dependências reais (Postgres, Kafka, Redis) em containers
-descartáveis durante a execução de testes automatizados.
 
-A versão inicial adotada foi `testcontainers-bom:1.20.4`. Maven
-gerencia as dependências individuais (`junit-jupiter`, `postgresql`)
-sem versão explícita, resolvendo via BOM.
+Para implementar os testes de integração da camada de persistência, foi adotado o **Testcontainers**, biblioteca amplamente utilizada para execução de bancos de dados e demais dependências reais em containers descartáveis durante os testes automatizados.
 
-Ao analisar o `pom.xml`, o IntelliJ (com Mend.io) reportou duas CVEs
-em uma **dependência transitiva** do Testcontainers,
-`org.apache.commons:commons-compress:1.24.0`:
+Inicialmente foi utilizada a versão **1.20.4**, posteriormente atualizada para **1.21.3** através do BOM oficial.
 
-- **CVE-2024-25710** (severidade 8.1, alta): Loop infinito ao processar
-  arquivos maliciosos. Pode causar denial of service.
-- **CVE-2024-26308** (severidade 5.5, média): Alocação de recursos sem
-  limites ao processar arquivos. Pode causar OutOfMemory.
+Durante a análise das dependências, ferramentas como IntelliJ/Mend.io identificaram duas vulnerabilidades na dependência transitiva:
 
-A `commons-compress` é usada pelo Testcontainers para extração de
-imagens Docker. Não é dependência direta do projeto.
+```
+org.apache.commons:commons-compress:1.24.0
+```
+
+As vulnerabilidades reportadas foram:
+
+* **CVE-2024-25710** — possibilidade de loop infinito durante processamento de arquivos comprimidos maliciosos.
+* **CVE-2024-26308** — possibilidade de consumo excessivo de memória ao processar arquivos especialmente construídos.
+
+Essa biblioteca é utilizada internamente pelo Testcontainers durante operações relacionadas ao Docker e não fazia parte das dependências diretas da aplicação.
+
+---
 
 ## Tentativa de mitigação
 
-Atualizou-se o BOM para `testcontainers-bom:1.21.3` (versão mais recente
-disponível). O alerta de CVE persistiu, indicando que a versão mais
-recente do Testcontainers ainda depende da `commons-compress` vulnerável,
-ou que a base de dados do scanner aponta uma versão fixa que ainda não
-foi atualizada.
+Foi realizada a atualização para **Testcontainers 1.21.3**, última versão disponível naquele momento.
+
+Entretanto, a vulnerabilidade permaneceu presente, indicando que a atualização da dependência transitiva ainda não havia ocorrido na linha 1.x.
+
+---
 
 ## Decisão
-Adotar `testcontainers-bom:1.21.3` (versão mais recente disponível),
-**aceitando temporariamente** o alerta de CVE. A justificativa:
 
-1. **Vetor de ataque inexistente no contexto atual.** A `commons-compress`
-   é usada pelo Testcontainers apenas para extrair imagens Docker
-   oficiais (Docker Hub). O projeto não processa arquivos comprimidos
-   originados de fontes externas não-confiáveis. O risco prático é
-   próximo de zero.
-2. **Escopo limitado.** O Testcontainers é usado apenas em testes
-   (`<scope>test</scope>`). A vulnerabilidade não entra no artefato
-   final em produção.
-3. **Bloqueio externo.** A solução definitiva depende de uma release
-   do Testcontainers que atualize a `commons-compress`. Não há
-   workaround sem forçar uma sobrescrita de versão (que pode quebrar
-   outras dependências do Testcontainers que dependem da API antiga).
+Aceitar temporariamente o risco e manter o uso do **Testcontainers 1.21.3**, considerando que:
+
+* a biblioteca vulnerável era utilizada exclusivamente durante os testes;
+* nenhum arquivo comprimido proveniente de usuários era processado pela aplicação;
+* a vulnerabilidade não fazia parte do artefato de produção;
+* não existia, naquele momento, uma atualização oficial que resolvesse o problema sem riscos de incompatibilidade.
+
+---
+
+## Validação
+
+Os testes de integração permaneceram funcionais utilizando containers reais.
+
+A vulnerabilidade permaneceu apenas como alerta em ferramentas de análise estática, sem impacto prático no ambiente de desenvolvimento.
+
+---
 
 ## Consequências
 
 ### Positivas
-- Testes de integração possíveis com containers reais.
-- Padrão de mercado, fácil de explicar em entrevista.
-- BOM facilita adicionar módulos extras (Kafka, Redis) na Fase 2 e
-  seguintes.
 
-### Negativas / riscos
-- Alerta visual em ferramentas de scan (Mend.io, Snyk, Dependabot).
-- Risco real próximo de zero, mas risco reputacional não-zero quando o
-  projeto for público no GitHub.
+* Possibilidade de executar testes de integração contra PostgreSQL real.
+* Estrutura preparada para futura utilização de Kafka, Redis e RabbitMQ.
+* Utilização de uma biblioteca consolidada no ecossistema Java.
 
-## Critérios de reavaliação
+### Negativas
 
-Esta decisão deve ser revisitada quando uma das condições for
-satisfeita:
+* Alertas permanentes em scanners de segurança.
+* Necessidade de acompanhar futuras versões da biblioteca.
+* Possível impacto reputacional caso o projeto fosse publicado contendo vulnerabilidades conhecidas.
 
-- Testcontainers liberar nova versão atualizando a `commons-compress`
-  para versão sem CVEs (ex: 1.26+).
-- Configuração do projeto via `dependencyManagement` para **forçar**
-  versão segura de `commons-compress` for testada e validada
-  (não estiver quebrando outras transitivas).
-- Em ambiente produtivo (CI/CD), automatizar análise via Dependabot ou
-  similar (planejado para Fase 8).
+---
+
+## Critérios de revisão
+
+Esta decisão deveria ser revisada quando ocorresse uma das seguintes situações:
+
+* atualização oficial do Testcontainers para uma versão sem as vulnerabilidades;
+* validação segura da sobrescrita manual da versão de `commons-compress`;
+* adoção de scanners automáticos de dependências no pipeline de CI/CD.
+
+**Todos esses critérios foram atendidos posteriormente pelo ADR 003**, que substituiu esta decisão.
+
+---
 
 ## Lições aprendidas
 
-1. **Dependências transitivas são invisíveis até causarem problema.**
-   Vale a pena inspecionar a árvore de dependências de qualquer
-   biblioteca adicionada, especialmente em projetos públicos.
+1. **Dependências transitivas também fazem parte da arquitetura.**
 
-2. **CVE em dev/teste tem severidade diferente de CVE em produção.**
-   Não é "Sou imune", mas é "Avalio o vetor de ataque real, não só o
-   score CVSS abstrato".
+   Mesmo quando não utilizadas diretamente, podem introduzir riscos de segurança e compatibilidade.
 
-3. **Documentar a aceitação consciente do risco é o padrão
-   profissional.** O alerta vai aparecer pra qualquer um que olhar o
-   projeto. Em vez de esconder ou ignorar, este ADR explica por que a
-   decisão foi tomada e em que circunstâncias deve ser revisada.
+2. **O contexto influencia a severidade de uma vulnerabilidade.**
 
-4. **Scanner de vulnerabilidade no CI vale ouro.** Ferramentas como
-   Dependabot, Snyk e OWASP Dependency-Check pegam isso automaticamente
-   em produção. Adicionar essas ferramentas é parte do roadmap do
-   projeto (Fase 8).
+   Uma CVE presente apenas em dependências de teste possui impacto muito diferente daquela presente em produção.
+
+3. **Aceitação consciente de risco é uma decisão arquitetural válida.**
+
+   Registrar a justificativa torna explícito que o risco foi avaliado, compreendido e monitorado.
+
+4. **Manter dependências atualizadas reduz problemas futuros.**
+
+   A atualização realizada posteriormente para Testcontainers 2.0.5 resolveu simultaneamente a incompatibilidade com o Docker Engine e eliminou a vulnerabilidade transitiva.
