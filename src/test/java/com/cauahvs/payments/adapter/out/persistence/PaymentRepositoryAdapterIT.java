@@ -34,7 +34,8 @@ class PaymentRepositoryAdapterIT {
                 UUID.randomUUID(),
                 "payer-001",
                 "payee-002",
-                new Money(new BigDecimal("150.75"), Currency.BRL)
+                new Money(new BigDecimal("150.75"), Currency.BRL),
+                "test-user"
         );
 
         // ACT

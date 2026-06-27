@@ -18,7 +18,7 @@ class PaymentTest {
         String payeeId = "payee-456";
         Money money = new Money(new BigDecimal("100.00"), Currency.BRL);
 
-        Payment payment = Payment.create(id, payerId, payeeId, money);
+        Payment payment = Payment.create(id, payerId, payeeId, money, "test-user");
 
         assertThat(payment.id()).isEqualTo(id);
         assertThat(payment.payerId()).isEqualTo(payerId);
@@ -33,7 +33,7 @@ class PaymentTest {
     void deveLancarExcecao_quandoIdEhNull(){
         Money money = new Money(new BigDecimal("100.00"), Currency.BRL);
 
-        assertThatThrownBy(() -> Payment.create(null, "payer-123", "payee-456", money))
+        assertThatThrownBy(() -> Payment.create(null, "payer-123", "payee-456", money, "test-user"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("id must not be null");
     }
@@ -42,7 +42,7 @@ class PaymentTest {
     void deveLancarExcecao_quandoPayerIdEhBlank(){
         Money money = new Money(new BigDecimal("100.00"), Currency.BRL);
 
-        assertThatThrownBy(() -> Payment.create(UUID.randomUUID(), "", "payee-456", money))
+        assertThatThrownBy(() -> Payment.create(UUID.randomUUID(), "", "payee-456", money, "test-user"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("payerId must not be blank");
     }
@@ -51,16 +51,25 @@ class PaymentTest {
     void deveLancarExcecao_quandoPayeeIdEhBlank (){
         Money money = new Money(new BigDecimal("100.00"), Currency.BRL);
 
-        assertThatThrownBy(() -> Payment.create(UUID.randomUUID(), "payer-123", "", money))
+        assertThatThrownBy(() -> Payment.create(UUID.randomUUID(), "payer-123", "", money, "test-user"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("payeeId must not be blank");
     }
 
     @Test
     void deveLancarExcecao_quandoMoneyEhNull(){
-        assertThatThrownBy(() -> Payment.create(UUID.randomUUID(), "payer-123", "payee-456", null))
+        assertThatThrownBy(() -> Payment.create(UUID.randomUUID(), "payer-123", "payee-456", null, "test-user"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("money must not be null");
+    }
+
+    @Test
+    void deveArmazenarCreatedBy_quandoPaymentEhCriado() {
+        Payment payment = Payment.create(
+                UUID.randomUUID(), "payer-123", "payee-456",
+                new Money(new BigDecimal("100.00"), Currency.BRL), "caua");
+
+        assertThat(payment.createdBy()).isEqualTo("caua");
     }
 
     @Test
@@ -165,7 +174,9 @@ class PaymentTest {
                 UUID.randomUUID(),
                 "payer-123",
                 "payee-456",
-                new Money(new BigDecimal("100.00"), Currency.BRL)
+                new Money(new BigDecimal("100.00"), Currency.BRL),
+                "test-user"
         );
     }
 }
+
