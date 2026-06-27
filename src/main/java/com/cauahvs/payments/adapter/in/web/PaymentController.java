@@ -5,6 +5,7 @@ import com.cauahvs.payments.application.port.in.CreatePaymentUseCase.CreatePayme
 import com.cauahvs.payments.application.port.out.PaymentRepository;
 import com.cauahvs.payments.domain.Payment;
 import jakarta.validation.Valid;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/payments")
+@Profile({"web", "default"})
 public class PaymentController {
 
     private final CreatePaymentUseCase createPaymentUseCase;
