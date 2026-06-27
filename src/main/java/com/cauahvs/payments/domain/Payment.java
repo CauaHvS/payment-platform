@@ -71,6 +71,10 @@ public class Payment {
         this.updatedAt = Instant.now();
     }
 
+    public boolean isFinal() {
+        return "COMPLETED".equals(status) || "FAILED".equals(status);
+    }
+
     public boolean isPending()    { return status == PaymentStatus.PENDING; }
     public boolean isProcessing() { return status == PaymentStatus.PROCESSING; }
     public boolean isCompleted()  { return status == PaymentStatus.COMPLETED; }

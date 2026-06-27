@@ -29,4 +29,9 @@ public record PaymentResponse(
                 payment.updatedAt()
         );
     }
+
+    public boolean isFinal() {
+        return status == PaymentStatus.COMPLETED || status == PaymentStatus.FAILED;
+    }
+
 }

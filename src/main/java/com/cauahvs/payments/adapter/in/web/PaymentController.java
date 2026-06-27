@@ -2,7 +2,7 @@ package com.cauahvs.payments.adapter.in.web;
 
 import com.cauahvs.payments.application.port.in.CreatePaymentUseCase;
 import com.cauahvs.payments.application.port.in.CreatePaymentUseCase.CreatePaymentCommand;
-import com.cauahvs.payments.application.port.out.PaymentRepository;
+import com.cauahvs.payments.application.service.GetPaymentService;
 import com.cauahvs.payments.domain.Payment;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
@@ -20,12 +20,12 @@ import java.util.UUID;
 public class PaymentController {
 
     private final CreatePaymentUseCase createPaymentUseCase;
-    private final PaymentRepository paymentRepository;
+    private final GetPaymentService getPaymentService;
 
     public  PaymentController(CreatePaymentUseCase createPaymentUseCase,
-                              PaymentRepository paymentRepository){
+                              GetPaymentService getPaymentService){
         this.createPaymentUseCase = createPaymentUseCase;
-        this.paymentRepository = paymentRepository;
+        this.getPaymentService = getPaymentService;
     }
 
     @PostMapping
@@ -51,11 +51,10 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentResponse> findById(@PathVariable UUID id){
-
-        return paymentRepository.findById(id)
-                .map(PaymentResponse::fromDomain)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PaymentResponse> findById(@PathVariable UUID id) {
+        PaymentResponse payment = getPaymentService.findById(id);
+        return payment != null
+                ? ResponseEntity.ok(payment)
+                : ResponseEntity.notFound().build();
     }
 }
