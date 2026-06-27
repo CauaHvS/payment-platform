@@ -1,4 +1,4 @@
-package com.cauahvs.payments.adapter.in.web;
+package com.cauahvs.payments.adapter.in.web.payment;
 
 import com.cauahvs.payments.domain.Payment;
 import com.cauahvs.payments.domain.PaymentStatus;

@@ -1,12 +1,9 @@
 package com.cauahvs.payments;
 
+import com.cauahvs.payments.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest
-class PaymentPlatformApplicationTests {
+class PaymentPlatformApplicationTests extends AbstractIntegrationTest {
 
 	@Test
 	void contextLoads() {

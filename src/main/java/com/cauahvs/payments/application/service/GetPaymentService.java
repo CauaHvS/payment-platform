@@ -1,6 +1,6 @@
 package com.cauahvs.payments.application.service;
 
-import com.cauahvs.payments.adapter.in.web.PaymentResponse;
+import com.cauahvs.payments.adapter.in.web.payment.PaymentResponse;
 import com.cauahvs.payments.application.port.out.PaymentRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;

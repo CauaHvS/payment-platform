@@ -1,4 +1,4 @@
-package com.cauahvs.payments.adapter.in.web;
+package com.cauahvs.payments.adapter.in.web.payment;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

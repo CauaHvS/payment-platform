@@ -1,4 +1,4 @@
-package com.cauahvs.payments.adapter.in.web;
+package com.cauahvs.payments.adapter.in.web.payment;
 
 import com.cauahvs.payments.application.port.in.CreatePaymentUseCase;
 import com.cauahvs.payments.application.port.in.CreatePaymentUseCase.CreatePaymentCommand;

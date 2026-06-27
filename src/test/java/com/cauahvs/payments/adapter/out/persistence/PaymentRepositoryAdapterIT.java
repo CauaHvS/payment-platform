@@ -1,16 +1,14 @@
 package com.cauahvs.payments.adapter.out.persistence;
 
-import com.cauahvs.payments.TestcontainersConfiguration;
 import com.cauahvs.payments.application.port.out.PaymentRepository;
 import com.cauahvs.payments.domain.Currency;
 import com.cauahvs.payments.domain.Money;
 import com.cauahvs.payments.domain.Payment;
 import com.cauahvs.payments.domain.PaymentStatus;
+import com.cauahvs.payments.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -18,18 +16,14 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
-@SpringBootTest
-@Import(TestcontainersConfiguration.class)
 @DisplayName("PaymentRepositoryAdapter — testes de integração com Postgres real")
-class PaymentRepositoryAdapterIT {
+class PaymentRepositoryAdapterIT extends AbstractIntegrationTest {
 
     @Autowired
     private PaymentRepository paymentRepository;
 
     @Test
     void devePersistirERecuperarPaymentDoPostgres() {
-        // ARRANGE
         Payment original = Payment.create(
                 UUID.randomUUID(),
                 "payer-001",
@@ -38,11 +32,9 @@ class PaymentRepositoryAdapterIT {
                 "test-user"
         );
 
-        // ACT
         paymentRepository.save(original);
         Optional<Payment> loaded = paymentRepository.findById(original.id());
 
-        // ASSERT
         assertThat(loaded).isPresent();
         Payment recovered = loaded.get();
         assertThat(recovered.id()).isEqualTo(original.id());
@@ -58,7 +50,6 @@ class PaymentRepositoryAdapterIT {
     @Test
     void deveRetornarOptionalEmpty_quandoPaymentNaoExiste() {
         Optional<Payment> result = paymentRepository.findById(UUID.randomUUID());
-
         assertThat(result).isEmpty();
     }
 }
