@@ -11,7 +11,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -38,11 +38,11 @@ public class KafkaConsumerConfig {
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JacksonJsonDeserializer.class);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        JsonDeserializer<PaymentCreatedEvent> deserializer =
-                new JsonDeserializer<>(PaymentCreatedEvent.class);
+        JacksonJsonDeserializer<PaymentCreatedEvent> deserializer =
+                new JacksonJsonDeserializer<>(PaymentCreatedEvent.class);
         deserializer.addTrustedPackages("com.cauahvs.payments.*");
 
         return new DefaultKafkaConsumerFactory<>(
@@ -65,7 +65,7 @@ public class KafkaConsumerConfig {
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                org.springframework.kafka.support.serializer.JsonSerializer.class);
+                org.springframework.kafka.support.serializer.JacksonJsonSerializer.class);
         ProducerFactory<Object, Object> pf = new DefaultKafkaProducerFactory<>(config);
         return new KafkaTemplate<>(pf);
     }
