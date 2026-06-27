@@ -27,3 +27,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: method
+
+jwt:
+  secret: "JdEMo+yEv2Hykzg/HzieVQRBF7NiukJUr8VLTDyE978="
+  expiration: 3600000  # 1 hora em milissegundos
