@@ -5,6 +5,7 @@ import com.cauahvs.payments.domain.Money;
 import com.cauahvs.payments.domain.Payment;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,13 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
                 .map(this::toDomain);
     }
 
+    @Override
+    public List<Payment> findAll() {
+        return jpaRepository.findAll().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private PaymentJpaEntity toEntity(Payment payment) {
         return new PaymentJpaEntity(
                 payment.id(),
@@ -39,7 +47,8 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
                 payment.money().currency(),
                 payment.status(),
                 payment.createdAt(),
-                payment.updatedAt()
+                payment.updatedAt(),
+                payment.createdBy()
         );
     }
 
@@ -52,7 +61,8 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
                 money,
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                entity.getCreatedBy()
         );
     }
 }

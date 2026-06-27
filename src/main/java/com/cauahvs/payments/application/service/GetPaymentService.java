@@ -5,6 +5,7 @@ import com.cauahvs.payments.application.port.out.PaymentRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -21,5 +22,11 @@ public class GetPaymentService {
         return paymentRepository.findById(id)
                 .map(PaymentResponse::fromDomain)
                 .orElse(null);
+    }
+
+    public List<PaymentResponse> findAll() {
+        return paymentRepository.findAll().stream()
+                .map(PaymentResponse::fromDomain)
+                .toList();
     }
 }

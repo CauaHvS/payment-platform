@@ -12,6 +12,7 @@ public interface CreatePaymentUseCase {
             String payerId,
             String payeeId,
             BigDecimal amount,
-            String currency
+            String currency,
+            String createdBy
     ){}
 }

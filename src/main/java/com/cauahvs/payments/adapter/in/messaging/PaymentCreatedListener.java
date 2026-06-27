@@ -22,7 +22,8 @@ public class PaymentCreatedListener {
 
     @KafkaListener(topics = "payment.created", groupId = "payment-processor")
     public void onPaymentCreated(PaymentCreatedEvent event) {
-        log.info("Received PaymentCreatedEvent for payment {}", event.paymentId());
+        log.info("Received PaymentCreatedEvent for payment {} created by {}",
+                event.paymentId(), event.createdBy());
         processPaymentUseCase.process(event.paymentId());
     }
 }

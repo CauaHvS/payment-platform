@@ -8,10 +8,13 @@ import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.core.Authentication;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,15 +31,24 @@ public class PaymentController {
         this.getPaymentService = getPaymentService;
     }
 
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<PaymentResponse> findAll() {
+        return getPaymentService.findAll();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<PaymentResponse> create(@Valid @RequestBody CreatePaymentRequest request){
+    public ResponseEntity<PaymentResponse> create(@Valid @RequestBody CreatePaymentRequest request,
+                                                  Authentication authentication) {
+        String createdBy = (authentication != null) ? authentication.getName() : "system";
 
         CreatePaymentCommand command = new CreatePaymentCommand(
                 request.payerId(),
                 request.payeeId(),
                 request.amount(),
-                request.currency()
+                request.currency(),
+                createdBy
         );
 
         Payment payment = createPaymentUseCase.execute(command);

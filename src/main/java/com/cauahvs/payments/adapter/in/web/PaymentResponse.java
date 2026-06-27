@@ -15,7 +15,8 @@ public record PaymentResponse(
         String currency,
         PaymentStatus status,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String createdBy
 ) {
     public static PaymentResponse fromDomain(Payment payment){
         return new PaymentResponse(
@@ -26,7 +27,8 @@ public record PaymentResponse(
                 payment.money().currency().name(),
                 payment.status(),
                 payment.createdAt(),
-                payment.updatedAt()
+                payment.updatedAt(),
+                payment.createdBy()
         );
     }
 

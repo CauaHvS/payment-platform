@@ -10,6 +10,7 @@ public record PaymentCreatedEvent(
         String payeeId,
         BigDecimal amount,
         String currency,
+        String createdBy,
         Instant occurredAt
 ) {
     public static PaymentCreatedEvent from(com.cauahvs.payments.domain.Payment payment) {
@@ -19,6 +20,7 @@ public record PaymentCreatedEvent(
                 payment.payeeId(),
                 payment.money().amount(),
                 payment.money().currency().name(),
+                payment.createdBy(),
                 Instant.now()
         );
     }

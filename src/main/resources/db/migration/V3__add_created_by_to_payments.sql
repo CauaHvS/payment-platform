@@ -1,0 +1,1 @@
+ALTER TABLE payments ADD COLUMN created_by VARCHAR(100);

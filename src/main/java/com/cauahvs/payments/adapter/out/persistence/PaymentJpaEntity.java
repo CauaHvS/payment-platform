@@ -38,13 +38,17 @@ public class PaymentJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
     protected PaymentJpaEntity() {
     }
 
     public PaymentJpaEntity(UUID id, String payerId, String payeeId,
                             BigDecimal amount, Currency currency,
                             PaymentStatus status,
-                            Instant createdAt, Instant updatedAt) {
+                            Instant createdAt, Instant updatedAt,
+                            String createdBy) {
         this.id = id;
         this.payerId = payerId;
         this.payeeId = payeeId;
@@ -53,6 +57,7 @@ public class PaymentJpaEntity {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
     }
 
     public UUID getId() { return id; }
@@ -63,4 +68,5 @@ public class PaymentJpaEntity {
     public PaymentStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public String getCreatedBy() { return createdBy; }
 }

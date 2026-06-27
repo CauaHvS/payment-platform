@@ -11,9 +11,10 @@ public class Payment {
     private final Instant createdAt;
     private PaymentStatus status;
     private Instant updatedAt;
+    private final String createdBy;
 
     private Payment(UUID id, String payerId, String payeeId, Money money,
-                    PaymentStatus status, Instant createdAt, Instant updatedAt) {
+                    PaymentStatus status, Instant createdAt, Instant updatedAt, String createdBy) {
         if (id == null) {
             throw new IllegalArgumentException("id must not be null.");
         }
@@ -34,17 +35,22 @@ public class Payment {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.createdBy = createdBy;
     }
 
-    public static Payment create(UUID id, String payerId, String payeeId, Money money) {
+    public static Payment create(UUID id, String payerId, String payeeId, Money money, String createdBy) {
         Instant now = Instant.now();
-        return new Payment(id, payerId, payeeId, money, PaymentStatus.PENDING, now, now);
+        return new Payment(id, payerId, payeeId, money, PaymentStatus.PENDING, now, now, createdBy);
     }
 
     public static Payment reconstruct(UUID id, String payerId, String payeeId,
                                       Money money, PaymentStatus status,
-                                      Instant createdAt, Instant updatedAt) {
-        return new Payment(id, payerId, payeeId, money, status, createdAt, updatedAt);
+                                      Instant createdAt, Instant updatedAt, String createdBy) {
+        return new Payment(id, payerId, payeeId, money, status, createdAt, updatedAt, createdBy);
+    }
+
+    public String createdBy() {
+        return createdBy;
     }
 
     public void startProcessing() {
@@ -72,7 +78,7 @@ public class Payment {
     }
 
     public boolean isFinal() {
-        return "COMPLETED".equals(status) || "FAILED".equals(status);
+        return status == PaymentStatus.COMPLETED || status == PaymentStatus.FAILED;
     }
 
     public boolean isPending()    { return status == PaymentStatus.PENDING; }

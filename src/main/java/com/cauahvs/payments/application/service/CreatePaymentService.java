@@ -6,10 +6,12 @@ import com.cauahvs.payments.application.port.out.PaymentRepository;
 import com.cauahvs.payments.domain.Currency;
 import com.cauahvs.payments.domain.Money;
 import com.cauahvs.payments.domain.Payment;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+
 @Service
 public class CreatePaymentService implements CreatePaymentUseCase {
 
@@ -27,11 +29,19 @@ public class CreatePaymentService implements CreatePaymentUseCase {
     public Payment execute(CreatePaymentCommand command) {
         Currency currency = Currency.valueOf(command.currency());
         Money money = new Money(command.amount(), currency);
+
+        String createdBy = currentUsername();
+
         Payment payment = Payment.create(UUID.randomUUID(),
-                command.payerId(), command.payeeId(), money);
+                command.payerId(), command.payeeId(), money, command.createdBy());
 
         Payment saved = paymentRepository.save(payment);
         eventPublisher.publishPaymentCreated(saved);
         return saved;
+    }
+
+    private String currentUsername() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null) ? auth.getName() : "system";
     }
 }
