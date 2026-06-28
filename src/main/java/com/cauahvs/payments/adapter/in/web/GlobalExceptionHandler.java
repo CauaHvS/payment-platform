@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -71,6 +72,14 @@ public class GlobalExceptionHandler {
         );
         problem.setTitle("Internal server error");
         problem.setType(URI.create("https://payment-platform.cauahvs.com/errors/internal"));
+        return problem;
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ProblemDetail handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "Access denied");
+        problem.setTitle("Forbidden");
         return problem;
     }
 }
