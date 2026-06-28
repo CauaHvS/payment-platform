@@ -9,6 +9,7 @@ import com.cauahvs.payments.domain.Payment;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.annotation.Counted;
 
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ public class CreatePaymentService implements CreatePaymentUseCase {
 
     @Override
     @Transactional
+    @Counted(value = "payments.created", description = "Total de pagamentos criados")
     public Payment execute(CreatePaymentCommand command) {
         Currency currency = Currency.valueOf(command.currency());
         Money money = new Money(command.amount(), currency);
@@ -39,6 +41,8 @@ public class CreatePaymentService implements CreatePaymentUseCase {
         eventPublisher.publishPaymentCreated(saved);
         return saved;
     }
+
+
 
     private String currentUsername() {
         var auth = SecurityContextHolder.getContext().getAuthentication();

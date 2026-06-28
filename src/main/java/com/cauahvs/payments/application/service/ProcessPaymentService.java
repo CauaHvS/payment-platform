@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,8 +20,18 @@ public class ProcessPaymentService implements ProcessPaymentUseCase {
 
     private final PaymentRepository paymentRepository;
 
-    public ProcessPaymentService(PaymentRepository paymentRepository) {
+    private final Counter completedCounter;
+    private final Counter failedCounter;
+
+    public ProcessPaymentService(PaymentRepository paymentRepository, MeterRegistry meterRegistry) {
         this.paymentRepository = paymentRepository;
+        this.completedCounter = Counter.builder("payments.processed")
+                .tag("status", "COMPLETED")
+                .description("Total de pagamentos processados por status")
+                .register(meterRegistry);
+        this.failedCounter = Counter.builder("payments.processed")
+                .tag("status", "FAILED")
+                .register(meterRegistry);
     }
 
     @Override
@@ -42,9 +54,11 @@ public class ProcessPaymentService implements ProcessPaymentUseCase {
 
         if (approved) {
             payment.complete();
+            completedCounter.increment();
             log.info("Payment {} completed", paymentId);
         } else {
             payment.fail();
+            failedCounter.increment();
             log.info("Payment {} failed", paymentId);
         }
         paymentRepository.save(payment);
