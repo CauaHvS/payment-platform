@@ -159,5 +159,5 @@ command, mantendo a camada de aplicação limpa.
   `SecurityFilterChain`.
 - jjwt (io.jsonwebtoken) — geração e validação de JWT.
 - RFC 7519 — JSON Web Token.
-- ADR 003 (separação API/Worker via profiles) — base para restringir a
+- ADR 005 (separação API/Worker via profiles) — base para restringir a
   segurança ao perfil web.
