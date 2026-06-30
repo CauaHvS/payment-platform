@@ -2,6 +2,7 @@ package com.cauahvs.payments.adapter.in.web.payment;
 
 import com.cauahvs.payments.domain.Payment;
 import com.cauahvs.payments.domain.PaymentStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,6 +33,7 @@ public record PaymentResponse(
         );
     }
 
+    @JsonIgnore
     public boolean isFinal() {
         return status == PaymentStatus.COMPLETED || status == PaymentStatus.FAILED;
     }
