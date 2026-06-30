@@ -25,7 +25,7 @@ public class PaymentController {
     private final CreatePaymentUseCase createPaymentUseCase;
     private final GetPaymentService getPaymentService;
 
-    public  PaymentController(CreatePaymentUseCase createPaymentUseCase,
+    public PaymentController(CreatePaymentUseCase createPaymentUseCase,
                               GetPaymentService getPaymentService){
         this.createPaymentUseCase = createPaymentUseCase;
         this.getPaymentService = getPaymentService;
