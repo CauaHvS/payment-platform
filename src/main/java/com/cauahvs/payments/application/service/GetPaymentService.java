@@ -17,7 +17,8 @@ public class GetPaymentService {
         this.paymentRepository = paymentRepository;
     }
 
-    @Cacheable(value = "payments", key = "#id", unless = "#result == null || !#result.isFinal()")
+    @Cacheable(value = "payments", key = "#id",
+            unless = "#result == null || (#result.status().name() != 'COMPLETED' && #result.status().name() != 'FAILED')")
     public PaymentResponse findById(UUID id) {
         return paymentRepository.findById(id)
                 .map(PaymentResponse::fromDomain)

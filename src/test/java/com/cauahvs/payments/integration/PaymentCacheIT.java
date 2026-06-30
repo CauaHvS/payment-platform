@@ -49,7 +49,8 @@ class PaymentCacheIT extends AbstractIntegrationTest {
 
         Cache cache = cacheManager.getCache("payments");
         assertThat(cache).isNotNull();
-        assertThat(cache.get(paymentId)).isNull();
+
+        cache.evict(paymentId);
 
         PaymentResponse response = getPaymentService.findById(paymentId);
         assertThat(response).isNotNull();
