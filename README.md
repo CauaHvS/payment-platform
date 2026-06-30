@@ -1,243 +1,256 @@
-# Mini Payment Platform
+# Payment Platform
 
-### Event-Driven Payment Processing Platform
+Plataforma de processamento de pagamentos construída como projeto de estudo
+e portfólio, demonstrando uma arquitetura backend moderna: hexagonal,
+orientada a eventos, com separação entre API e Worker, cache, segurança JWT,
+observabilidade completa e uma suíte de testes de integração com
+infraestrutura real.
 
-> Plataforma de processamento de pagamentos construída em fases
-> incrementais, com foco em evolução arquitetural e conceitos utilizados em
-> sistemas distribuídos modernos.
-
-![Java](https://img.shields.io/badge/Java-21-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
+> **Stack principal:** Java 21 · Spring Boot 4.1 · PostgreSQL · Apache Kafka ·
+> Redis · Prometheus · Grafana · Docker
 
 ---
 
 ## Visão geral
 
-A aplicação recebe pagamentos via API REST, persiste de forma síncrona e
-processa de forma assíncrona através de eventos Kafka. A arquitetura segue o
-padrão **Ports & Adapters (Hexagonal)**, mantendo o domínio isolado de
-frameworks e infraestrutura.
+A aplicação expõe uma API REST para criação e consulta de pagamentos. Cada
+pagamento criado é publicado como um evento no Kafka e processado de forma
+assíncrona por um Worker independente, que simula a comunicação com um
+gateway externo e atualiza o estado do pagamento (PENDING → COMPLETED /
+FAILED).
 
-O processamento é desacoplado da recepção: o `POST /payments` apenas
-persiste o pagamento como `PENDING` e publica um evento, respondendo
-rapidamente. Um worker dedicado consome o evento e executa o processamento
-real, atualizando o status de forma independente.
-
----
-
-## Tecnologias
-
-| Categoria | Tecnologia |
-|------------|------------|
-| Linguagem | Java 21 |
-| Framework | Spring Boot 4.1.0 |
-| Banco de Dados | PostgreSQL 16 |
-| Mensageria | Apache Kafka (modo KRaft) |
-| Cache | Redis |
-| Segurança | Spring Security + JWT |
-| Observabilidade | Prometheus + Grafana |
-| Migrations | Flyway |
-| Documentação | springdoc-openapi (Swagger UI) |
-| Testes | JUnit 5, Mockito, Testcontainers |
-| Infraestrutura | Docker & Docker Compose |
+O projeto foi desenvolvido em fases incrementais, cada uma documentada por um
+Architecture Decision Record (ADR) e uma revisão de estudo, registrando as
+decisões de arquitetura e os trade-offs envolvidos.
 
 ---
 
 ## Arquitetura
 
-```text
-                          ┌──────────────────┐
-        POST /payments    │   payment-api    │
-        ─────────────────▶│   (perfil web)   │
-                          │   REST + Producer│
-                          └─────────┬────────┘
-                                    │ persiste (PENDING)
-                                    ▼
-                          ┌──────────────────┐
-        GET /payments/{id}│    PostgreSQL    │
-        ◀─────────────────│                  │
-              ▲           └─────────┬────────┘
-              │ cache de            │ publica evento
-              │ leitura             ▼
-        ┌─────┴──────┐    ┌──────────────────┐
-        │   Redis    │    │      Kafka       │
-        └────────────┘    │  payment.created │
-                          └─────────┬────────┘
-                                    │ consome
-                                    ▼
-                          ┌──────────────────┐
-                          │  payment-worker  │
-                          │  (perfil worker) │
-                          │ Consumer +       │
-                          │ processamento    │
-                          └─────────┬────────┘
-                                    │ atualiza status
-                                    ▼
-                          ┌──────────────────┐
-                          │    PostgreSQL    │
-                          │ COMPLETED/FAILED │
-                          └──────────────────┘
+O sistema segue a **Arquitetura Hexagonal** (Ports & Adapters), isolando o
+domínio das tecnologias de infraestrutura. A API e o Worker rodam como
+processos independentes a partir do mesmo artefato, selecionados por Spring
+Profiles (ver ADR 005).
+
+```
+                          +-------------------+
+        HTTP (REST)       |                   |
+   client  ───────────►   |     API (web)     |
+                          |                   |
+                          |  - PaymentController
+                          |  - Auth (JWT)
+                          |  - persiste no banco
+                          |  - publica evento
+                          +---------+---------+
+                                    |
+                                    |  PaymentCreatedEvent
+                                    v
+                          +-------------------+
+                          |      Kafka        |
+                          |  topic:           |
+                          |  payment.created  |
+                          +---------+---------+
+                                    |
+                                    |  consome
+                                    v
+                          +-------------------+
+                          |   Worker          |
+                          |                   |
+                          |  - processa pagamento
+                          |  - simula gateway
+                          |  - atualiza estado
+                          |  - DLQ em falha
+                          +---------+---------+
+                                    |
+                  +-----------------+-----------------+
+                  v                 v                 v
+            +-----------+     +-----------+     +-----------+
+            | PostgreSQL|     |   Redis   |     |   Kafka   |
+            |  (dados)  |     |  (cache)  |     |   (DLQ)   |
+            +-----------+     +-----------+     +-----------+
 ```
 
-API e Worker executam a mesma base de código em perfis Spring distintos
-(`web` e `worker`), comunicando-se exclusivamente via Kafka. O Redis atua
-como cache de leitura no `GET /payments/{id}`, reduzindo a carga sobre o
-PostgreSQL em consultas repetidas.
+### Camadas (hexagonal)
+
+- **domain** — entidades e regras de negócio puras (Payment, Money, Role,
+  máquina de estados), sem dependências de framework.
+- **application** — casos de uso (services) e portas (interfaces de entrada e
+  saída).
+- **adapter/in** — adaptadores de entrada: controllers REST, listeners Kafka,
+  segurança.
+- **adapter/out** — adaptadores de saída: persistência JPA, publicação Kafka,
+  cache Redis.
 
 ---
 
-## Decisões de arquitetura
+## Stack tecnológica
 
-As principais decisões estão documentadas como ADRs em `docs/adr/`:
-
-| ADR | Decisão |
-|-----|---------|
-| 001 | Integração OpenAPI com springdoc 3.0.0 (compatível com Spring Boot 4) |
-| 002 | CVEs transitivas do Testcontainers (substituída pela 003) |
-| 003 | Atualização do Testcontainers 2.0.5 (compatibilidade com Docker Engine 29) |
-| 004 | Escolha de Kafka como tecnologia de mensageria |
-| 005 | Separação API/Worker via Spring Profiles |
-
-Material de estudo aprofundado de cada fase está em `docs/`
-(`fase-1-rest-hexagonal-revisao.md`, `fase-2-kafka-revisao.md`).
-
----
-
-## Roadmap
-
-- [x] **Fase 0** — Fundação (setup, Docker, estrutura hexagonal)
-- [x] **Fase 1** — API REST (domínio, persistência, REST, ProblemDetail, OpenAPI, Testcontainers)
-- [x] **Fase 2** — Kafka (producer, consumer, idempotência, Dead Letter Queue)
-- [x] **Fase 3** — Worker (separação API/Worker via Spring Profiles)
-- [ ] **Fase 4** — Redis (cache de leitura)
-- [ ] **Fase 5** — JWT (Spring Security)
-- [ ] **Fase 6** — Observabilidade (Prometheus + Grafana)
-- [ ] **Fase 7** — Testes avançados
-- [ ] **Fase 8** — Docker Compose & Documentação final
+| Categoria          | Tecnologia                                  |
+|--------------------|---------------------------------------------|
+| Linguagem          | Java 21                                     |
+| Framework          | Spring Boot 4.1                             |
+| Persistência       | PostgreSQL 16 + Spring Data JPA + Flyway    |
+| Mensageria         | Apache Kafka (KRaft)                        |
+| Cache              | Redis 7                                     |
+| Segurança          | Spring Security + JWT (jjwt)                |
+| Observabilidade    | Micrometer + Prometheus + Grafana           |
+| Documentação API   | SpringDoc OpenAPI (Swagger UI)              |
+| Testes             | JUnit 5 + Testcontainers + Awaitility       |
+| Build              | Maven (wrapper incluído)                    |
+| Containerização    | Docker + Docker Compose                     |
 
 ---
 
-## Como executar
+## Como rodar
 
 ### Pré-requisitos
 
-- Java 21
-- Docker & Docker Compose
+- Docker e Docker Compose
+- (Opcional, para desenvolvimento) JDK 21 e a IDE de sua preferência
 
-### 1. Subir a infraestrutura
+### Subir a stack completa
 
-```bash
-docker compose up -d
-```
-
-Sobe PostgreSQL (porta 5432), Kafka (porta 9092) e Kafka UI (porta 8081).
-
-### 2. Executar a aplicação
-
-**Modo desenvolvimento (tudo no mesmo processo):**
+Toda a aplicação (API + Worker) e a infraestrutura (PostgreSQL, Kafka, Redis,
+Prometheus, Grafana) sobem com um único comando:
 
 ```bash
-./mvnw spring-boot:run
+docker compose up -d --build
 ```
 
-**Modo separado (API e Worker como processos independentes):**
+Aguarde alguns segundos para a inicialização. A API estará disponível em
+`http://localhost:8080`.
+
+Para acompanhar os logs:
 
 ```bash
-# Build do artefato
-./mvnw clean package -DskipTests
-
-# Terminal 1 - API (REST, porta 8080)
-java -jar target/payment-platform-0.0.1-SNAPSHOT.jar --spring.profiles.active=web
-
-# Terminal 2 - Worker (consumer Kafka, sem HTTP)
-java -jar target/payment-platform-0.0.1-SNAPSHOT.jar --spring.profiles.active=worker
+docker compose logs -f app-web
+docker compose logs -f app-worker
 ```
 
-### 3. Acessos
-
-| Recurso | URL |
-|---------|-----|
-| API | http://localhost:8080 |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| OpenAPI JSON | http://localhost:8080/v3/api-docs |
-| Kafka UI | http://localhost:8081 |
-| Actuator | http://localhost:8080/actuator |
-
----
-
-## Uso da API
-
-### Criar pagamento
+Para derrubar:
 
 ```bash
-POST /payments
-Content-Type: application/json
-
-{
-  "payerId": "payer-001",
-  "payeeId": "payee-002",
-  "amount": 150.75,
-  "currency": "BRL"
-}
+docker compose down
 ```
 
-Resposta: `201 Created` com header `Location` e o pagamento em estado
-`PENDING`. O processamento ocorre de forma assíncrona logo em seguida.
+### Rodar apenas a infraestrutura (desenvolvimento local)
 
-### Consultar pagamento
+Para rodar a aplicação pela IDE e apenas a infraestrutura em containers, suba
+os serviços de apoio e inicie a aplicação localmente (ela usa `localhost` por
+padrão):
 
 ```bash
-GET /payments/{id}
-```
-
-Resposta: `200 OK` com o pagamento (já em estado `COMPLETED` ou `FAILED`
-após o processamento) ou `404 Not Found`.
-
----
-
-## Estrutura do projeto
-
-```text
-src/main/java/com/cauahvs/payments/
-├── domain/                      # Núcleo: regras de negócio puras
-│   ├── Payment.java             # Entidade com máquina de estados
-│   ├── Money.java               # Value Object (record)
-│   ├── Currency.java            # Enum
-│   └── PaymentStatus.java       # Enum
-├── application/
-│   ├── port/in/                 # Portas de entrada (use cases)
-│   ├── port/out/                # Portas de saída (repository, publisher)
-│   └── service/                 # Implementação dos use cases
-├── adapter/
-│   ├── in/web/                  # REST controllers, DTOs
-│   ├── in/messaging/            # Kafka listener (consumer)
-│   └── out/
-│       ├── persistence/         # JPA entity, repository, adapter
-│       └── messaging/           # Eventos, publisher Kafka
-└── config/                      # Configurações Kafka (producer/consumer)
+docker compose up -d postgres kafka redis
 ```
 
 ---
 
-## Conceitos demonstrados
+## Endpoints da API
 
-- Arquitetura Hexagonal (Ports & Adapters)
-- Domain-Driven Design (Value Objects, Entities, Always-Valid Model)
-- Arquitetura orientada a eventos com Kafka
-- Idempotência no processamento de eventos
-- Dead Letter Queue para tratamento de falhas
-- Separação API/Worker para escala independente
-- Tratamento de erros com ProblemDetail (RFC 9457)
-- Migrations versionadas com Flyway
-- Testes de integração com Testcontainers
-- Architecture Decision Records (ADRs)
+| Método | Rota                | Descrição                       | Acesso          |
+|--------|---------------------|---------------------------------|-----------------|
+| POST   | `/auth/register`    | Registra usuário, retorna token | Público         |
+| POST   | `/auth/login`       | Autentica, retorna token        | Público         |
+| POST   | `/payments`         | Cria um pagamento               | Autenticado     |
+| GET    | `/payments/{id}`    | Consulta um pagamento           | Autenticado     |
+| GET    | `/payments`         | Lista todos os pagamentos       | ADMIN           |
+
+A autenticação usa **JWT Bearer**. Após registrar ou logar, envie o token no
+header `Authorization: Bearer <token>`.
+
+### Exemplo rápido
+
+```bash
+# Registrar e capturar o token
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo","password":"senha123456"}' | jq -r .token)
+
+# Criar um pagamento
+curl -X POST http://localhost:8080/payments \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"payerId":"p1","payeeId":"p2","amount":100.00,"currency":"BRL"}'
+```
+
+---
+
+## Interfaces e portas
+
+| Serviço        | URL                                   | Credenciais         |
+|----------------|---------------------------------------|---------------------|
+| API            | http://localhost:8080                 | —                   |
+| Swagger UI     | http://localhost:8080/swagger-ui.html | —                   |
+| Prometheus     | http://localhost:9090                 | —                   |
+| Grafana        | http://localhost:3000                 | admin / admin       |
+| Kafka UI       | http://localhost:8081                 | —                   |
+| PostgreSQL     | localhost:5432                        | payments / payments |
+| Redis          | localhost:6379                        | —                   |
+
+---
+
+## Observabilidade
+
+A aplicação expõe métricas no formato Prometheus em `/actuator/prometheus`,
+incluindo métricas automáticas (JVM, HTTP, Kafka, pool de conexões) e
+métricas de negócio customizadas:
+
+- `payments_total` — total de pagamentos criados.
+- `payments_processed_total{status}` — pagamentos processados por status
+  (COMPLETED / FAILED).
+
+O Grafana traz um dashboard com painéis de negócio, latência HTTP (p95),
+memória JVM e pool de conexões, além de um alerta para taxa de falha de
+pagamentos. Detalhes no ADR 008.
+
+---
+
+## Testes
+
+A suíte cobre domínio, segurança, persistência, mensageria, cache e
+tratamento de falhas. Os testes de integração usam **Testcontainers**,
+subindo PostgreSQL, Kafka e Redis reais em containers descartáveis.
+
+```bash
+./mvnw test
+```
+
+> Requer Docker em execução (para os Testcontainers).
+
+---
+
+## Decisões de arquitetura (ADRs)
+
+As decisões de projeto estão documentadas em `docs/adr/`, e cada fase tem uma
+revisão de estudo em `docs/`:
+
+| ADR | Tema                                              |
+|-----|---------------------------------------------------|
+| 003 | Atualização do Testcontainers (Docker Engine 29)  |
+| 004 | Escolha do Kafka como tecnologia de mensageria    |
+| 005 | Separação entre API e Worker via Spring Profiles  |
+| 007 | Autenticação e autorização com JWT                |
+| 008 | Observabilidade com Prometheus e Grafana          |
+
+---
+
+## Roadmap de fases
+
+- [x] Fase 0–1 — Fundação e API REST
+- [x] Fase 2 — Mensageria com Kafka
+- [x] Fase 3 — Separação API / Worker
+- [x] Fase 4 — Cache com Redis
+- [x] Fase 5 — Segurança com JWT
+- [x] Fase 6 — Observabilidade (Prometheus + Grafana)
+- [x] Fase 7 — Suíte de testes de integração
+- [x] Fase 8 — Containerização e documentação
 
 ---
 
 ## Autor
 
 **Cauã Henrique Viana Salgado**
-Backend Developer
-
-- GitHub: [@CauaHvS](https://github.com/CauaHvS)
+- Repositório: https://github.com/CauaHvS/payment-platform
+- LinkedIn: https://www.linkedin.com/in/caua-henrique
+- Email: cauahenrique230503@gmail.com
+- Celular: (31) 99414-5996
